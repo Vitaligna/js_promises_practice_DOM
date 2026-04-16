@@ -14,7 +14,6 @@ function showNotification(message, type) {
 const firstPromise = new Promise((resolve, reject) => {
   const handleFirst = (e) => {
     if (e.button === 0) {
-      // eslint-disable-next-line no-use-before-define
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleFirst);
       resolve('First promise was resolved');
@@ -23,7 +22,9 @@ const firstPromise = new Promise((resolve, reject) => {
 
   const timer = setTimeout(() => {
     document.removeEventListener('mousedown', handleFirst);
-    reject(new Error('First promise was rejected'));
+
+    // eslint-disable-next-line prefer-promise-reject-errors
+    reject('First promise was rejected');
   }, 3000);
 
   document.addEventListener('mousedown', handleFirst);
@@ -64,12 +65,12 @@ const thirdPromise = new Promise((resolve) => {
 
 firstPromise
   .then((msg) => showNotification(msg, 'success'))
-  .catch((err) => {
-    const message = err instanceof Error ? err.message : err;
+  .catch((err) => showNotification(err, 'error'));
 
-    showNotification(message, 'error');
-  });
+secondPromise
+  .then((msg) => showNotification(msg, 'success'))
+  .catch((err) => showNotification(err, 'error'));
 
-secondPromise.then((msg) => showNotification(msg, 'success'));
-
-thirdPromise.then((msg) => showNotification(msg, 'success'));
+thirdPromise
+  .then((msg) => showNotification(msg, 'success'))
+  .catch((err) => showNotification(err, 'error'));
