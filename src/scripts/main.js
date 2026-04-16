@@ -1,66 +1,75 @@
 'use strict';
 
 function showNotification(message, type) {
-  const notification = document.createElement('div');
+  const note = document.createElement('div');
 
-  notification.dataset.qa = 'notification';
-  notification.classList.add(type);
-  notification.textContent = message;
+  note.setAttribute('data-qa', 'notification');
+  note.classList.add(type);
+  note.textContent = message;
+  document.body.append(note);
 
-  document.body.append(notification);
+  setTimeout(() => note.remove(), 5000);
 }
 
 const firstPromise = new Promise((resolve, reject) => {
-  const timeoutId = setTimeout(() => {
-    reject(new Error('First promise was rejected in 3 seconds'));
+  const handleFirst = (e) => {
+    if (e.button === 0) {
+      // eslint-disable-next-line no-use-before-define
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleFirst);
+      resolve('First promise was resolved');
+    }
+  };
+
+  const timer = setTimeout(() => {
+    document.removeEventListener('mousedown', handleFirst);
+    reject(new Error('First promise was rejected'));
   }, 3000);
 
-  document.addEventListener(
-    'click',
-    () => {
-      clearTimeout(timeoutId);
-      resolve('First promise was resolved on a left click in the document');
-    },
-    { once: true },
-  );
+  document.addEventListener('mousedown', handleFirst);
+});
+
+const secondPromise = new Promise((resolve) => {
+  const handleSecond = (e) => {
+    if (e.button === 0 || e.button === 2) {
+      document.removeEventListener('mousedown', handleSecond);
+      resolve('Second promise was resolved');
+    }
+  };
+
+  document.addEventListener('mousedown', handleSecond);
+});
+
+const thirdPromise = new Promise((resolve) => {
+  let leftClicked = false;
+  let rightClicked = false;
+
+  const handleThird = (e) => {
+    if (e.button === 0) {
+      leftClicked = true;
+    }
+
+    if (e.button === 2) {
+      rightClicked = true;
+    }
+
+    if (leftClicked && rightClicked) {
+      document.removeEventListener('mousedown', handleThird);
+      resolve('Third promise was resolved');
+    }
+  };
+
+  document.addEventListener('mousedown', handleThird);
 });
 
 firstPromise
-  .then((message) => showNotification(message, 'success'))
-  .catch((error) => showNotification(error.message, 'error'));
+  .then((msg) => showNotification(msg, 'success'))
+  .catch((err) => {
+    const message = err instanceof Error ? err.message : err;
 
-const secondPromise = new Promise((resolve) => {
-  document.addEventListener(
-    'mousedown',
-    (e) => {
-      if (e.button === 0 || e.button === 2) {
-        resolve('Second promise was resolved');
-      }
-    },
-    { once: true },
-  );
-});
-
-secondPromise.then((message) => showNotification(message, 'success'));
-
-const leftClickPromise = new Promise((resolve) => {
-  document.addEventListener('mousedown', (e) => {
-    if (e.button === 0) {
-      resolve();
-    }
+    showNotification(message, 'error');
   });
-});
 
-const rightClickPromise = new Promise((resolve) => {
-  document.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    resolve();
-  });
-});
+secondPromise.then((msg) => showNotification(msg, 'success'));
 
-const thirdPromise = Promise.all([leftClickPromise, rightClickPromise]).then(
-  () =>
-    'Third promise was resolved only after both left and right clicks happened',
-);
-
-thirdPromise.then((message) => showNotification(message, 'success'));
+thirdPromise.then((msg) => showNotification(msg, 'success'));
